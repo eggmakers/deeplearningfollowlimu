@@ -42,3 +42,14 @@ b[:] = 2
 print(a)
 
 
+#practice
+#1. 删除缺失值最多的列。
+inputs, outputs = data.iloc[:, 0 : 2], data.iloc[:, 2]
+x = inputs.isna().sum()
+data = data.drop(columns= x.index[x.argmax()])
+print(data)
+
+
+#2. 将预处理后的数据集转换为张量格式。
+x = torch.tensor(data.values)
+print(x)

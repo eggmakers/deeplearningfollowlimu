@@ -113,3 +113,14 @@ print(a.item())
 print(float(a))
 print(int(a))
 
+#practice
+#1.运行本节中的代码。将本节中的条件语句`X == Y`更改为`X < Y`或`X > Y`，然后看看你可以得到什么样的张量。
+print(x < y, '\n',  x > y)
+
+
+#2. 用其他形状（例如三维张量）替换广播机制中按元素操作的两个张量。结果是否与预期相同？
+a = torch.arange(3).reshape((1, 3, 1))
+b = torch.arange(2).reshape((1, 1, 2))
+print(a)
+print(b)
+print(a + b)
