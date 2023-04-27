@@ -41,7 +41,7 @@ trainer = torch.optim.SGD(net.parameters(), lr=0.03)
 
 
 #训练
-num_epochs = 3
+num_epochs = 10
 for epoch in range(num_epochs):
     for X, y in data_iter:
         l = loss(net(X), y)
