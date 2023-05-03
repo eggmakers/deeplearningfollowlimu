@@ -21,8 +21,10 @@ DATA_HUB['kaggle_house_test'] = (  #@save
     DATA_URL + 'kaggle_house_pred_test.csv',
     'fa19780a7b011d9b009e8bff8e99922a8ee2eb90')
 
-train_data = pd.read_csv(download('kaggle_house_train'))
-test_data = pd.read_csv(download('kaggle_house_test'))
+# train_data = pd.read_csv(download('kaggle_house_train'))
+# test_data = pd.read_csv(download('kaggle_house_test'))
+train_data = pd.read_csv('F:/code/deeplearningfollowlimu/first_race/train.csv')
+test_data = pd.read_csv('F:/code/deeplearningfollowlimu/first_race/test.csv')
 
 print(train_data)
 print(test_data)
@@ -52,7 +54,8 @@ print(all_features.shape)
 n_train = train_data.shape[0]
 train_features = paddle.to_tensor(all_features[:n_train].values, dtype=paddle.float32)
 test_features = paddle.to_tensor(all_features[n_train:].values, dtype=paddle.float32)
-train_labels = paddle.to_tensor(train_data.SalePrice.values.reshape(-1, 1), dtype=paddle.float32)
+train_labels = paddle.to_tensor(
+    train_data.SalePrice.values.reshape(-1, 1), dtype=paddle.float32)
 
 
 #训练
@@ -66,8 +69,9 @@ def get_net():
 
 #用价格预测的对数来衡量差异
 def log_rmse(net, features, labels):
-    clipped_preds = torch.clamp(net(features), 1, float('inf'))
-    rmse = torch.sqrt(loss(torch.log(clipped_preds), torch.log(labels)))
+    clipped_preds = paddle.clip(net(features), 1, float('inf'))
+    rmse = paddle.sqrt(loss(paddle.log(clipped_preds),
+                            paddle.log(labels)))
     return rmse.item()
 
 
@@ -130,9 +134,30 @@ def k_fold(k, X_train, y_train, num_epochs, learning_rate, weight_decay,
 
 
 #模型选择
-k, num_epochs, lr, weight_decay, batch_size = 5, 100, 5, 0, 64
+k, num_epochs, lr, weight_decay, batch_size = 6, 100, 20, 0, 64
 train_l, valid_l = k_fold(k, train_features, train_labels, num_epochs, lr,
                           weight_decay, batch_size)
 print(f'{k}-折验证: 平均训练log rmse: {float(train_l):f}, '
       f'平均验证log rmse: {float(valid_l):f}')
 d2l.plt.show()
+
+
+#提交Kaggle预测
+def train_and_pred(train_features, test_features, train_labels, test_data, 
+                   num_epochs, lr, weight_decay, batch_size):
+    net = get_net()
+    train_ls, _ = train(net, train_features, train_labels, None, None, 
+                        num_epochs, lr, weight_decay, batch_size)
+    d2l.plot(np.arange(1, num_epochs + 1), [train_ls], xlabel='epoch',
+            ylabel='log rmse', xlim=[1, num_epochs], yscale='log')
+    print(f'训练log rmse:{float(train_ls[-1]):f}')
+    #将网络应用于测试集
+    preds = net(test_features).detach().numpy()
+    #重新格式化以导出到Kaggle
+    test_data['SalePrice'] = pd.Series(preds.reshape(1, -1)[0])
+    submission = pd.concat([test_data['Id'], test_data['SalePrice']], axis=1)
+    submission.to_csv('submission_csv', index=False)
+    d2l.plt.show()
+
+train_and_pred(train_features, test_features, train_labels, test_data, 
+               num_epochs, lr, weight_decay, batch_size)
