@@ -12,14 +12,14 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 from d2l import paddle as d2l
 
 
-#使用pandas读入并处理数据
-DATA_HUB['kaggle_house_train'] = (  #@save
-    DATA_URL + 'kaggle_house_pred_train.csv',
-    '585e9cc93e70b39160e7921475f9bcd7d31219ce')
+# #使用pandas读入并处理数据
+# DATA_HUB['kaggle_house_train'] = (  #@save
+#     DATA_URL + 'kaggle_house_pred_train.csv',
+#     '585e9cc93e70b39160e7921475f9bcd7d31219ce')
 
-DATA_HUB['kaggle_house_test'] = (  #@save
-    DATA_URL + 'kaggle_house_pred_test.csv',
-    'fa19780a7b011d9b009e8bff8e99922a8ee2eb90')
+# DATA_HUB['kaggle_house_test'] = (  #@save
+#     DATA_URL + 'kaggle_house_pred_test.csv',
+#     'fa19780a7b011d9b009e8bff8e99922a8ee2eb90')
 
 # train_data = pd.read_csv(download('kaggle_house_train'))
 # test_data = pd.read_csv(download('kaggle_house_test'))
@@ -134,7 +134,7 @@ def k_fold(k, X_train, y_train, num_epochs, learning_rate, weight_decay,
 
 
 #模型选择
-k, num_epochs, lr, weight_decay, batch_size = 6, 100, 20, 0, 64
+k, num_epochs, lr, weight_decay, batch_size = 6, 1000, 20, 0, 64
 train_l, valid_l = k_fold(k, train_features, train_labels, num_epochs, lr,
                           weight_decay, batch_size)
 print(f'{k}-折验证: 平均训练log rmse: {float(train_l):f}, '
