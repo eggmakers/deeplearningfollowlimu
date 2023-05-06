@@ -5,6 +5,7 @@ from torch import nn
 #计算设备
 print(torch.device('cpu'))
 print(torch.cuda.device('cuda'))
+print(torch.cuda.is_available())
 
 
 #查询可用GPU的数量
