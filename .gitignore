@@ -3,6 +3,14 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+d2l-zh/pytorch/data/
+d2l-zh/pytorch/chapter_convolutional-modern/data/FashionMNIST/raw/
+d2l-zh/pytorch/chapter_convolutional-neural-networks/data/FashionMNIST/raw/
+d2l-zh/pytorch/data/kaggle_cifar10_tiny/
+*.zip
+*.gz
+*.png
+*.jpg
 # C extensions
 *.so
 
