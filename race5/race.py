@@ -16,6 +16,9 @@ import matplotlib.pyplot as plt
 from sklearn.model_selection import StratifiedKFold
 import subprocess
 
+from PIL import Image
+import zipfile 
+
 json_file_path = 'F:/code/deeplearningfollowlimu/d2l-zh/pytorch/data/cowboyoutfits/train.json'
 data = json.load(open(json_file_path, 'r'))
 
@@ -191,9 +194,9 @@ for fold in range(NUM_FOLD):
 
 #训练
 IMG_SIZE = 640
-BATCH_SIZE = 64
-EPOCHS = 20
-MODEL = 'yolo5s.pt'
+BATCH_SIZE = 32
+EPOCHS = 20 
+MODEL = 'yolov5s.pt'
 name = f'{MODEL}_BS_{BATCH_SIZE}_EP_{EPOCHS}_fold_'
 
 
@@ -216,3 +219,84 @@ for fold in range(NUM_FOLD):
         break
     
     subprocess.call(command)
+
+test_df = pd.read_csv('F:/code/deeplearningfollowlimu/d2l-zh/pytorch/data/cowboyoutfits/test.csv')
+os.makedirs('F:/code/deeplearningfollowlimu/race5/training/inference/test', exist_ok=True)
+for i in tqdm(range(len(test_df))):
+    test_row = test_df.loc[i]
+    test_name = test_row.file_name.split('.')[0]
+    copyfile(f'F:/code/deeplearningfollowlimu/d2l-zh/pytorch/data/cowboyoutfits/images/{test_name}.jpg',
+            f'F:/code/deeplearningfollowlimu/race5/training/inference/test/{test_name}.jpg')
+    
+TEST_PATH = 'F:/code/deeplearningfollowlimu/race5/training/inference/test/'
+
+MODEL_PATH = [
+    'F:/code/deeplearningfollowlimu/race5/yolov5s.pt_BS_32_EP_20_fold_-0/weights/best.pt',
+    'F:/code/deeplearningfollowlimu/race5/yolov5s.pt_BS_32_EP_20_fold_-1/weights/best.pt']
+
+command = ['python', 'race5/yolov5/detect.py',
+           '--weights', {MODEL_PATH[0]},
+           '--source', {TEST_PATH},
+        #    '--conf', '0.25',
+        #    '--iou-thres', '0.5',
+        #    '--save-txt',
+        #    '--save-conf',
+        #    '--max-det', '50',
+        #    '--augment',
+        #    '--half'
+           ]
+
+subprocess.call(command)
+
+PRED_PATH = 'F:/code/deeplearningfollowlimu/race5/yolov5/runs/detect/exp/labels'
+
+prediction_files = os.listdir(PRED_PATH)
+print('Number of test images predicted as opaque: ', len(prediction_files))
+
+
+#MAKE SUBMISSION
+def yolo2cc_bbox(img_width, img_height, bbox):
+    x = (bbox[0] - bbox[2] * 0.5) * img_width
+    y = (bbox[1] - bbox[3] * 0.5) * img_height
+    w = bbox[2] * img_width
+    h = bbox[3] * img_height
+    
+    return (x, y, w, h)
+
+cate_id_map = {87: 0, 1034: 1, 131: 2, 318: 3, 588: 4}
+
+re_cate_id_map = dict(zip(cate_id_map.values(), cate_id_map.keys()))
+
+print(re_cate_id_map)
+
+def make_submission(df, PRED_PATH, IMAGE_PATH):
+    output = []
+    for i in tqdm(range(len(df))):
+        row = df.loc[i] #根据目标df，选择行
+        image_id = row['id'] #找到图片的id
+        file_name = row['file_name'].split('.')[0] #去掉文件名字的后缀'.jpg'， 方便后面读取annotation文件，因为是一样的.
+        prediction_files = os.listdir(PRED_PATH)
+        
+        if f'{file_name}.txt' in prediction_files: # 根据文件名字，检索annotation文件夹下的文件, 如果找到的话：
+            img = Image.open(f'{IMAGE_PATH}/{file_name}.jpg') #这里是为了后面转换yolo to coco 格式时候，要得到图片的size
+            width, height = img.size
+            with open(f'{PRED_PATH}/{file_name}.txt', 'r') as file: #根据前面判断找到有annotation的，准备读取文件。
+                for line in file: #因为annotaion是按照行存的，一个文件下面有多个annotation 就是多个猫框。
+                    preds = line.strip('\n').split(' ')  #把每行转换成list保存
+                    preds = list(map(float, preds)) #conver string to float
+                    cc_bbox = yolo2cc_bbox(width, height, preds[1:-1]) # 转换 锚框格式.
+                    result = {
+                        'image_id': image_id,
+                        'category_id': re_cate_id_map[preds[0]],
+                        'bbox': cc_bbox,
+                        'score': preds[-1]
+                    }
+
+                    output.append(result)
+    return output
+
+out_sub = make_submission(test_df, PRED_PATH, TEST_PATH)
+
+op_pd = pd.DataFrame(out_sub)
+
+print(op_pd)
